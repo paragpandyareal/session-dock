@@ -1,75 +1,148 @@
-# Sessiondex
+<p align="center">
+  <img src="docs/banner.png" alt="Sessiondex: a party screen for your Claude Code sessions" width="100%">
+</p>
 
-**A Pokémon-style party screen for your Claude Code sessions.**
+<p align="center">
+  <a href="https://github.com/paragpandyareal/sessiondex/releases/latest"><img src="https://img.shields.io/github/v/release/paragpandyareal/sessiondex?color=FFD84D&label=release" alt="Latest release"></a>
+  <a href="https://github.com/paragpandyareal/sessiondex/actions/workflows/build.yml"><img src="https://github.com/paragpandyareal/sessiondex/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/paragpandyareal/sessiondex/actions/workflows/codeql.yml"><img src="https://github.com/paragpandyareal/sessiondex/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-3A4478" alt="Windows 10 and 11">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-62D86E" alt="MIT license"></a>
+</p>
 
-Sessiondex docks a slim panel to the right edge of your Windows screen. Every Claude Code session you have running, in a terminal or in the Claude desktop app, gets a card with its own pixel critter, showing what Claude is doing right now.
+<p align="center">
+  <b>Every Claude Code session gets a pixel critter.</b><br>
+  Working critters hop. Finished ones do a victory spin. Idle ones fall asleep.<br>
+  The one that needs you shakes, shouts "!" and pings Windows until you look.
+</p>
 
-- **Working** critters hop.
-- **Waiting for you** critters shake and pop a "!" bubble, and you get a Windows notification.
-- **Finished** critters do a little victory spin.
-- **Idle** critters fall asleep.
+<p align="center">
+  <img src="docs/preview.gif" alt="Sessiondex in action" width="480">
+</p>
 
-Click a card to jump straight into that session.
+<p align="center">
+  <a href="docs/sessiondex-demo.mp4"><b>▶ Watch the 50-second demo (with sound)</b></a>
+</p>
 
-![Sessiondex](docs/sessiondex.png)
+---
+
+## Why
+
+If you run more than two Claude Code sessions at once, you know the feeling. One of them has been sitting at "Do you want to proceed?" for twenty minutes, in the terminal tab you can't see.
+
+Sessiondex docks a slim panel to the right edge of your screen, like the taskbar but vertical, and shows every session at a glance: what it's doing, what you last asked it, and whether it's waiting on you. It works with the Claude Code **CLI** and the **Claude desktop app**, side by side.
 
 ## Features
 
-- **Live status for every session:** Working, Waiting for you, Finished or Idle, plus what it's doing in plain words ("Editing app.js", "Run the test suite").
-- **Knows when you're needed:** permission prompts and questions highlight the card, and you get a notification. You also get a notification when a long job finishes.
-- **Click to open:** desktop sessions open directly, and CLI sessions bring their terminal to the front.
-- **CLI and desktop:** each card shows where its session came from, plus the project folder, git branch and your last prompt.
-- **Mini mode:** push the dock in to a 64px strip of critters, where only the ones with news move.
-- **Comfort options:** Compact cards, Calm mode (no looping motion; follows the Windows animation setting) and Plain wording (for screen sharing).
-- **Stays out of the way:** it docks like the taskbar, so windows resize around it instead of being covered.
+| | |
+|---|---|
+| 🟡 **Live status** | Working, Waiting for you, Finished or Idle. It says what Claude is doing in plain words ("Editing app.js", "Run the test suite"), not raw commands. |
+| 🔴 **Knows when you're needed** | Permission prompts and questions turn the card red, pop a "!" and send a Windows notification. You also get one when a long job finishes. |
+| 🖱️ **Click to jump in** | Click a card and you're in that session. Desktop sessions open directly, and CLI sessions bring their terminal to the front. |
+| 🏷️ **Context on every card** | Project folder, git branch, CLI or Desktop label, your last prompt, and how long it's been running. |
+| 📉 **Mini mode** | Push the dock in to a 64px strip of critters. Only the ones with news move. |
+| 🧘 **Comfort options** | Compact cards, Calm mode (no looping motion; follows your Windows animation setting) and Plain wording (no game phrases, handy for screen sharing). |
+| 🪟 **Plays nice with Windows** | Docks with the Windows AppBar API, so other windows resize around it instead of being covered. Tray icon to show, hide or quit. |
 
-## Requirements
+## Screenshots
 
-- Windows 10 or 11
-- [Claude Code](https://code.claude.com) (CLI and/or desktop app)
-- [Node.js](https://nodejs.org) (runs the tiny hook script)
-- [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) for the release zip, or the .NET 10 SDK to build from source
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshot-full.png" width="260"><br><sub>Full view, with two sessions waiting for you</sub></td>
+    <td align="center"><img src="docs/screenshot-compact.png" width="260"><br><sub>Compact cards</sub></td>
+    <td align="center"><img src="docs/screenshot-mini.png" width="64"><br><sub>Mini mode</sub></td>
+  </tr>
+</table>
 
 ## Install
 
-**From a release:** download `Sessiondex-win-x64.zip` from [Releases](../../releases), check its SHA-256 against the release notes, and extract it somewhere like `%LOCALAPPDATA%\Programs\Sessiondex`.
-
-**Or build from source:**
+**You need:** Windows 10 or 11, [Claude Code](https://code.claude.com), [Node.js](https://nodejs.org) and the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0).
 
 ```powershell
+winget install OpenJS.NodeJS.LTS Microsoft.DotNet.DesktopRuntime.10
+```
+
+### 1. Get Sessiondex
+
+Download **`Sessiondex-win-x64.zip`** from the [latest release](https://github.com/paragpandyareal/sessiondex/releases/latest). Check its SHA-256 against the release notes:
+
+```powershell
+Get-FileHash .\Sessiondex-win-x64.zip -Algorithm SHA256
+```
+
+Then extract it to `%LOCALAPPDATA%\Programs\Sessiondex`.
+
+<details>
+<summary>Or build it from source</summary>
+
+```powershell
+winget install Microsoft.DotNet.SDK.10
 git clone https://github.com/paragpandyareal/sessiondex
 cd sessiondex
 dotnet publish AgentDock.csproj -c Release -o "$env:LOCALAPPDATA\Programs\Sessiondex"
 ```
+</details>
 
-**Then connect it to Claude Code (one time):**
+### 2. Connect it to Claude Code (one time)
 
 ```powershell
 & "$env:LOCALAPPDATA\Programs\Sessiondex\AgentDock.exe" --install-hooks
 ```
 
-This backs up `~/.claude/settings.json` and adds one hook entry per event. Nothing else in the file changes. Restart any running Claude Code sessions afterwards. To undo it, run `--uninstall-hooks`.
+This saves a backup of `~/.claude/settings.json`, then adds one hook entry per event. Nothing else in the file is touched. Restart any Claude Code sessions that are already running so they pick up the hooks.
 
-**Run it:**
+### 3. Run it
 
 ```powershell
 & "$env:LOCALAPPDATA\Programs\Sessiondex\AgentDock.exe"
 ```
 
-To start it with Windows, put a shortcut to `AgentDock.exe` in `shell:startup`.
+To start it with Windows, press <kbd>Win</kbd>+<kbd>R</kbd>, type `shell:startup`, and drop a shortcut to `AgentDock.exe` in that folder.
 
-## Privacy and security
+> **Heads up:** the release build isn't code-signed, so Windows SmartScreen may say "Windows protected your PC" the first time. Click **More info → Run anyway**, or build from source if you'd rather.
 
-Everything stays on your machine: no telemetry, no network calls, no admin rights. The app listens on `127.0.0.1` only, behind a per-install secret token. See [SECURITY.md](SECURITY.md) for exactly what it touches and how the listener is protected.
+## Uninstall
+
+```powershell
+& "$env:LOCALAPPDATA\Programs\Sessiondex\AgentDock.exe" --uninstall-hooks
+```
+
+Then quit it from the tray and delete `%LOCALAPPDATA%\Programs\Sessiondex` and `%LOCALAPPDATA%\AgentDock`. That's everything.
+
+## Transparency: what it does on your machine
+
+Short version: **it never leaves your machine.**
+
+- **No network calls** except to itself on `127.0.0.1`. No telemetry, analytics, accounts or auto-update.
+- **No admin rights.** No services, drivers or registry changes.
+- **It changes exactly one file you own:** `~/.claude/settings.json`, and only when you run `--install-hooks`. It keeps a timestamped backup and removes its entries with `--uninstall-hooks`.
+- **The hook is about 80 readable lines:** [`hook/agent-dock-hook.js`](hook/agent-dock-hook.js), with no dependencies. It forwards each event to the app and always exits within 1 second. It never prints anything, so it can't inject text into Claude's context, and it runs in the background so Claude never waits on it.
+- **The local listener is locked down.** It needs a per-install random token, rejects browser requests and DNS-rebinding tricks, accepts only small JSON bodies, and validates every field before use.
+- **Your prompts stay in memory** and are never written to disk.
+
+Full details are in [SECURITY.md](SECURITY.md). Found a problem? Please [report it privately](https://github.com/paragpandyareal/sessiondex/security/advisories/new).
 
 ## How it works
 
-Claude Code [hooks](https://code.claude.com/docs/en/hooks) run `hook/agent-dock-hook.js` on each session event. The script trims the event and posts it to the app on localhost. It runs asynchronously and always exits within 1 second, so it never slows Claude down. The app turns those events into cards.
+```
+Claude Code session ──hook event──▶ node agent-dock-hook.js ──POST 127.0.0.1 + token──▶ Sessiondex
+   (CLI or desktop)                 (async, ≤1 s, silent)                               (WPF dock)
+```
 
-Debugging: the log is at `%LOCALAPPDATA%\AgentDock\agentdock.log`.
+Sessiondex listens to these [Claude Code hooks](https://code.claude.com/docs/en/hooks): `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Notification`, `Stop`, `SubagentStop` and `SessionEnd`. It turns them into cards. It tells CLI sessions from desktop ones using each session's transcript, and notices when a session's Claude process exits.
 
-## Credits
+## FAQ
 
-The critters are original, procedurally generated pixel art. Sessiondex is a fan-made homage to the party screens of handheld monster games. It isn't affiliated with Nintendo, Game Freak or The Pokémon Company, or with Anthropic.
+**Does it slow Claude Code down?** No. The hooks run asynchronously and the script exits within a second, even if Sessiondex isn't running.
 
-MIT licensed.
+**Mac or Linux?** Not yet. The docking and tray parts are Windows-specific.
+
+**Are those Pokémon?** No. They're original critters generated from each session's id, so every session gets its own. The whole thing is a fan-made homage to handheld party screens, and it isn't affiliated with Nintendo, Game Freak, The Pokémon Company or Anthropic.
+
+**Why is the exe called AgentDock?** That was its working title. The name on screen is Sessiondex, because every card is a session.
+
+## License
+
+[MIT](LICENSE). Do what you like with it.
+
+Made with Claude Code. The demo video was made with [Remotion](https://www.remotion.dev).
