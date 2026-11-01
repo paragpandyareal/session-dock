@@ -1,10 +1,10 @@
 # Security
 
-Sessiondex is a local-only desktop app. This page explains exactly what it does on your machine, so you can decide whether to trust it before installing.
+Session Dock is a local-only desktop app. This page explains exactly what it does on your machine, so you can decide whether to trust it before installing.
 
 ## What it does
 
-- **Reads hook events from Claude Code.** You opt in by running `AgentDock.exe --install-hooks`. That adds one hook entry per event to `~/.claude/settings.json`, after saving a timestamped backup next to it. Nothing else in the file is changed. `--uninstall-hooks` removes only those entries.
+- **Reads hook events from Claude Code.** You opt in by running `SessionDock.exe --install-hooks`. That adds one hook entry per event to `~/.claude/settings.json`, after saving a timestamped backup next to it. Nothing else in the file is changed. `--uninstall-hooks` removes only those entries.
 - **Runs a small hook script** (`hook/agent-dock-hook.js`, about 80 lines, no dependencies). Claude Code runs it with Node.js for each event. It forwards the event to the app on `127.0.0.1` and always exits within 1 second. It never writes to stdout, so it cannot inject anything into Claude's context. Large fields (tool output, file contents) are dropped before sending.
 - **Listens on `127.0.0.1` only** on a random port, saved in `%LOCALAPPDATA%\AgentDock\config.json`. It is never reachable from your network.
 - **Reads the first lines of session transcripts** to tell CLI sessions from desktop ones. It also reads `.git/HEAD` to show the branch. Both are read-only.
@@ -19,7 +19,7 @@ Sessiondex is a local-only desktop app. This page explains exactly what it does 
 
 ## How the local listener is protected
 
-- **Secret token.** A per-install random 256-bit token is required on every data request (`X-Sessiondex-Token`). Other apps and web pages don't know it.
+- **Secret token.** A per-install random 256-bit token is required on every data request (`X-SessionDock-Token`). Other apps and web pages don't know it.
 - **No browser requests.** Browsers can't add that custom header to cross-site requests without a CORS preflight, which the server never approves. Requests carrying an `Origin` header are rejected outright.
 - **DNS rebinding blocked.** The `Host` header must be `127.0.0.1:<port>` or `localhost:<port>`.
 - **Strict input handling.** Only JSON bodies are accepted. Bodies are capped at 256 KB, with at most 16 connections and 64 tracked sessions, and a 3-second timeout per request.

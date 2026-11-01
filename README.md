@@ -1,11 +1,11 @@
 <p align="center">
-  <img src="docs/banner.png" alt="Sessiondex: a party screen for your Claude Code sessions" width="100%">
+  <img src="docs/banner.png" alt="Session Dock: a party screen for your Claude Code sessions" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://github.com/paragpandyareal/sessiondex/releases/latest"><img src="https://img.shields.io/github/v/release/paragpandyareal/sessiondex?color=FFD84D&label=release" alt="Latest release"></a>
-  <a href="https://github.com/paragpandyareal/sessiondex/actions/workflows/build.yml"><img src="https://github.com/paragpandyareal/sessiondex/actions/workflows/build.yml/badge.svg" alt="Build"></a>
-  <a href="https://github.com/paragpandyareal/sessiondex/actions/workflows/codeql.yml"><img src="https://github.com/paragpandyareal/sessiondex/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
+  <a href="https://github.com/paragpandyareal/session-dock/releases/latest"><img src="https://img.shields.io/github/v/release/paragpandyareal/session-dock?color=FFD84D&label=release" alt="Latest release"></a>
+  <a href="https://github.com/paragpandyareal/session-dock/actions/workflows/build.yml"><img src="https://github.com/paragpandyareal/session-dock/actions/workflows/build.yml/badge.svg" alt="Build"></a>
+  <a href="https://github.com/paragpandyareal/session-dock/actions/workflows/codeql.yml"><img src="https://github.com/paragpandyareal/session-dock/actions/workflows/codeql.yml/badge.svg" alt="CodeQL"></a>
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-3A4478" alt="Windows 10 and 11">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-62D86E" alt="MIT license"></a>
 </p>
@@ -17,11 +17,11 @@
 </p>
 
 <p align="center">
-  <img src="docs/preview.gif" alt="Sessiondex in action" width="480">
+  <img src="docs/preview.gif" alt="Session Dock in action" width="480">
 </p>
 
 <p align="center">
-  <a href="docs/sessiondex-demo.mp4"><b>▶ Watch the 50-second demo (with sound)</b></a>
+  <a href="docs/session-dock-demo.mp4"><b>▶ Watch the 50-second demo (with sound)</b></a>
 </p>
 
 ---
@@ -30,7 +30,7 @@
 
 If you run more than two Claude Code sessions at once, you know the feeling. One of them has been sitting at "Do you want to proceed?" for twenty minutes, in the terminal tab you can't see.
 
-Sessiondex docks a slim panel to the right edge of your screen, like the taskbar but vertical, and shows every session at a glance: what it's doing, what you last asked it, and whether it's waiting on you. It works with the Claude Code **CLI** and the **Claude desktop app**, side by side.
+Session Dock docks a slim panel to the right edge of your screen, like the taskbar but vertical, and shows every session at a glance: what it's doing, what you last asked it, and whether it's waiting on you. It works with the Claude Code **CLI** and the **Claude desktop app**, side by side.
 
 ## Features
 
@@ -62,31 +62,31 @@ Sessiondex docks a slim panel to the right edge of your screen, like the taskbar
 winget install OpenJS.NodeJS.LTS Microsoft.DotNet.DesktopRuntime.10
 ```
 
-### 1. Get Sessiondex
+### 1. Get Session Dock
 
-Download **`Sessiondex-win-x64.zip`** from the [latest release](https://github.com/paragpandyareal/sessiondex/releases/latest). Check its SHA-256 against the release notes:
+Download **`SessionDock-win-x64.zip`** from the [latest release](https://github.com/paragpandyareal/session-dock/releases/latest). Check its SHA-256 against the release notes:
 
 ```powershell
-Get-FileHash .\Sessiondex-win-x64.zip -Algorithm SHA256
+Get-FileHash .\SessionDock-win-x64.zip -Algorithm SHA256
 ```
 
-Then extract it to `%LOCALAPPDATA%\Programs\Sessiondex`.
+Then extract it to `%LOCALAPPDATA%\Programs\SessionDock`.
 
 <details>
 <summary>Or build it from source</summary>
 
 ```powershell
 winget install Microsoft.DotNet.SDK.10
-git clone https://github.com/paragpandyareal/sessiondex
-cd sessiondex
-dotnet publish AgentDock.csproj -c Release -o "$env:LOCALAPPDATA\Programs\Sessiondex"
+git clone https://github.com/paragpandyareal/session-dock
+cd session-dock
+dotnet publish SessionDock.csproj -c Release -o "$env:LOCALAPPDATA\Programs\SessionDock"
 ```
 </details>
 
 ### 2. Connect it to Claude Code (one time)
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Sessiondex\AgentDock.exe" --install-hooks
+& "$env:LOCALAPPDATA\Programs\SessionDock\SessionDock.exe" --install-hooks
 ```
 
 This saves a backup of `~/.claude/settings.json`, then adds one hook entry per event. Nothing else in the file is touched. Restart any Claude Code sessions that are already running so they pick up the hooks.
@@ -94,20 +94,20 @@ This saves a backup of `~/.claude/settings.json`, then adds one hook entry per e
 ### 3. Run it
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Sessiondex\AgentDock.exe"
+& "$env:LOCALAPPDATA\Programs\SessionDock\SessionDock.exe"
 ```
 
-To start it with Windows, press <kbd>Win</kbd>+<kbd>R</kbd>, type `shell:startup`, and drop a shortcut to `AgentDock.exe` in that folder.
+To start it with Windows, press <kbd>Win</kbd>+<kbd>R</kbd>, type `shell:startup`, and drop a shortcut to `SessionDock.exe` in that folder.
 
 > **Heads up:** the release build isn't code-signed, so Windows SmartScreen may say "Windows protected your PC" the first time. Click **More info → Run anyway**, or build from source if you'd rather.
 
 ## Uninstall
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Sessiondex\AgentDock.exe" --uninstall-hooks
+& "$env:LOCALAPPDATA\Programs\SessionDock\SessionDock.exe" --uninstall-hooks
 ```
 
-Then quit it from the tray and delete `%LOCALAPPDATA%\Programs\Sessiondex` and `%LOCALAPPDATA%\AgentDock`. That's everything.
+Then quit it from the tray and delete `%LOCALAPPDATA%\Programs\SessionDock` and `%LOCALAPPDATA%\AgentDock`. That's everything.
 
 ## Transparency: what it does on your machine
 
@@ -120,26 +120,26 @@ Short version: **it never leaves your machine.**
 - **The local listener is locked down.** It needs a per-install random token, rejects browser requests and DNS-rebinding tricks, accepts only small JSON bodies, and validates every field before use.
 - **Your prompts stay in memory** and are never written to disk.
 
-Full details are in [SECURITY.md](SECURITY.md). Found a problem? Please [report it privately](https://github.com/paragpandyareal/sessiondex/security/advisories/new).
+Full details are in [SECURITY.md](SECURITY.md). Found a problem? Please [report it privately](https://github.com/paragpandyareal/session-dock/security/advisories/new).
 
 ## How it works
 
 ```
-Claude Code session ──hook event──▶ node agent-dock-hook.js ──POST 127.0.0.1 + token──▶ Sessiondex
+Claude Code session ──hook event──▶ node agent-dock-hook.js ──POST 127.0.0.1 + token──▶ Session Dock
    (CLI or desktop)                 (async, ≤1 s, silent)                               (WPF dock)
 ```
 
-Sessiondex listens to these [Claude Code hooks](https://code.claude.com/docs/en/hooks): `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Notification`, `Stop`, `SubagentStop` and `SessionEnd`. It turns them into cards. It tells CLI sessions from desktop ones using each session's transcript, and notices when a session's Claude process exits.
+Session Dock listens to these [Claude Code hooks](https://code.claude.com/docs/en/hooks): `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Notification`, `Stop`, `SubagentStop` and `SessionEnd`. It turns them into cards. It tells CLI sessions from desktop ones using each session's transcript, and notices when a session's Claude process exits.
 
 ## FAQ
 
-**Does it slow Claude Code down?** No. The hooks run asynchronously and the script exits within a second, even if Sessiondex isn't running.
+**Does it slow Claude Code down?** No. The hooks run asynchronously and the script exits within a second, even if Session Dock isn't running.
 
 **Mac or Linux?** Not yet. The docking and tray parts are Windows-specific.
 
 **Are those Pokémon?** No. They're original critters generated from each session's id, so every session gets its own. The whole thing is a fan-made homage to handheld party screens, and it isn't affiliated with Nintendo, Game Freak, The Pokémon Company or Anthropic.
 
-**Why is the exe called AgentDock?** That was its working title. The name on screen is Sessiondex, because every card is a session.
+**Why is the data folder called `AgentDock`?** That was the working title. Keeping it means upgrading from Sessiondex 1.0 (its previous name) keeps your settings and hook.
 
 ## License
 

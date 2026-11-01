@@ -81,7 +81,7 @@ public partial class App : Application
             _tray.Notify("Couldn't open that session", $"No window found for {session.Project}. It may have been closed.");
 
         _window.Show();
-        Log.Write($"Sessiondex started, listening on 127.0.0.1:{port}");
+        Log.Write($"Session Dock started, listening on 127.0.0.1:{port}");
     }
 
     int StartServer(AppConfig config)

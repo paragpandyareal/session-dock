@@ -35,7 +35,7 @@ public partial class MainWindow : Window
         PortText.Text = hooksInstalled ? "Connected to Claude Code" : "Not connected: hooks not installed";
         PortText.ToolTip = hooksInstalled
             ? $"Receiving hook events on 127.0.0.1:{port}\nHooks registered in {HookInstaller.SettingsPath}"
-            : "Run: AgentDock.exe --install-hooks";
+            : "Run: SessionDock.exe --install-hooks";
         if (!hooksInstalled) StatusDot.Fill = (System.Windows.Media.Brush)FindResource("WaitingBrush");
     }
 

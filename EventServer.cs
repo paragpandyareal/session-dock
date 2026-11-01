@@ -19,7 +19,8 @@ namespace AgentDock;
 ///   GET  /sessions  current session state    (token required, for debugging)
 ///
 /// Security: every request must carry a Host header of 127.0.0.1/localhost (blocks DNS
-/// rebinding), and data endpoints need the per-install secret in X-Sessiondex-Token.
+/// rebinding), and data endpoints need the per-install secret in X-SessionDock-Token
+/// (X-Sessiondex-Token is still accepted from hook scripts installed by 1.0).
 /// Browsers can't send that custom header cross-origin without a CORS preflight, which
 /// this server never approves, so web pages can't post or read events.
 /// </summary>
@@ -113,7 +114,8 @@ public sealed class EventServer : IDisposable
                     string value = line[(colon + 1)..].Trim();
                     if (name.Equals("Content-Length", StringComparison.OrdinalIgnoreCase)) int.TryParse(value, out length);
                     else if (name.Equals("Host", StringComparison.OrdinalIgnoreCase)) host = value;
-                    else if (name.Equals("X-Sessiondex-Token", StringComparison.OrdinalIgnoreCase)) token = value;
+                    else if (name.Equals("X-SessionDock-Token", StringComparison.OrdinalIgnoreCase)
+                          || name.Equals("X-Sessiondex-Token", StringComparison.OrdinalIgnoreCase)) token = value;
                     else if (name.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)) contentType = value;
                     else if (name.Equals("Origin", StringComparison.OrdinalIgnoreCase)) hasOrigin = true;
                 }

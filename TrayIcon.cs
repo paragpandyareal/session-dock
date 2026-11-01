@@ -29,14 +29,14 @@ internal sealed class TrayIcon : IDisposable
             menu.Items.Add(item);
         }
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(new ToolStripMenuItem("Exit Sessiondex", null, (_, _) => exit()));
+        menu.Items.Add(new ToolStripMenuItem("Exit Session Dock", null, (_, _) => exit()));
         menu.Opening += (_, _) => toggleItem.Text = isPanelVisible() ? "Hide panel" : "Show panel";
 
         _image = CreateIcon();
         _icon = new NotifyIcon
         {
             Icon = _image,
-            Text = "Sessiondex",
+            Text = "Session Dock",
             ContextMenuStrip = menu,
             Visible = true,
         };

@@ -1,5 +1,5 @@
-// Agent Dock hook: forwards a Claude Code hook event (JSON on stdin) to the
-// Agent Dock app on 127.0.0.1. It never writes to stdout/stderr and always
+// Session Dock hook: forwards a Claude Code hook event (JSON on stdin) to the
+// Session Dock app on 127.0.0.1. It never writes to stdout/stderr and always
 // exits 0 within about one second, whether or not the app is running.
 'use strict';
 const startedAt = Math.round(performance.timeOrigin);
@@ -71,7 +71,7 @@ function send() {
     headers: {
       'Content-Type': 'application/json',
       'Content-Length': body.length,
-      'X-Sessiondex-Token': token,
+      'X-SessionDock-Token': token,
     },
   }, res => {
     res.resume();

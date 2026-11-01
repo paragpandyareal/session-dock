@@ -8,7 +8,7 @@ using System.Text.Json.Nodes;
 namespace AgentDock;
 
 /// <summary>
-/// Merges the Agent Dock hook into ~/.claude/settings.json (user level), after a
+/// Merges the Session Dock hook into ~/.claude/settings.json (user level), after a
 /// timestamped backup. Only handlers that point at agent-dock-hook.js are ever
 /// added, replaced or removed; everything else in the file is left as it is.
 /// </summary>
@@ -113,7 +113,7 @@ public static class HookInstaller
         }
 
         Save(root);
-        output.WriteLine($"Agent Dock hooks registered in {SettingsPath}");
+        output.WriteLine($"Session Dock hooks registered in {SettingsPath}");
         if (backup != null) output.WriteLine($"Backup of the previous settings: {backup}");
         output.WriteLine($"Hook command: \"{node}\" \"{InstalledScriptPath}\"");
         output.WriteLine("Restart running Claude Code sessions so they pick up the new hooks.");
@@ -142,12 +142,12 @@ public static class HookInstaller
         }
 
         Save(root);
-        output.WriteLine($"Agent Dock hooks removed from {SettingsPath}");
+        output.WriteLine($"Session Dock hooks removed from {SettingsPath}");
         if (backup != null) output.WriteLine($"Backup of the previous settings: {backup}");
         return 0;
     }
 
-    /// <summary>True when every event has an Agent Dock handler.</summary>
+    /// <summary>True when every event has an Session Dock handler.</summary>
     public static bool IsInstalled()
     {
         try
@@ -195,7 +195,7 @@ public static class HookInstaller
         File.Move(temp, SettingsPath, overwrite: true);
     }
 
-    /// <summary>Removes Agent Dock handlers from each matcher group, and drops groups left empty.</summary>
+    /// <summary>Removes Session Dock handlers from each matcher group, and drops groups left empty.</summary>
     static void RemoveOurHandlers(JsonArray groups)
     {
         for (int i = groups.Count - 1; i >= 0; i--)
