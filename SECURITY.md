@@ -16,6 +16,7 @@ Session Dock is a local-only desktop app. This page explains exactly what it doe
 - No admin rights, services, drivers or registry changes.
 - It never runs commands from event data, never writes to your projects, and never changes Claude Code settings unless you run the install flag.
 - Prompts and activity are kept in memory only, never written to disk. The log at `%LOCALAPPDATA%\AgentDock\agentdock.log` records errors only.
+- So cards survive an app restart, `%LOCALAPPDATA%\AgentDock\sessions.json` keeps each open session's id, folder, process id, status and timestamps. It holds no prompts, replies or tool details, and sessions whose Claude Code process has exited are dropped.
 
 ## How the local listener is protected
 

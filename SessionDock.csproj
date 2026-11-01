@@ -13,7 +13,7 @@
     <Product>Session Dock</Product>
     <!-- Shown as the app name on Windows notifications -->
     <AssemblyTitle>Session Dock</AssemblyTitle>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <!-- The manifest's DPI settings are for WPF; WinForms is only used for the tray icon. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <!-- Reproducible builds that don't embed the builder's local folder paths -->

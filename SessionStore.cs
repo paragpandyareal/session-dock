@@ -38,7 +38,85 @@ public sealed class SessionStore : ObservableObject
         _timer.Tick += (_, _) => Tick();
         _timer.Start();
         Sessions.CollectionChanged += (_, _) => RefreshSummary();
+        Restore();
         RefreshSummary();
+    }
+
+    // Cards survive an app restart. Only bookkeeping is saved: no prompts, replies or tool details.
+    static string StatePath => Path.Combine(ConfigStore.Dir, "sessions.json");
+    bool _dirty;
+
+    sealed record SavedSession(string SessionId, string Cwd, int ClaudePid, string? TranscriptPath, string Source,
+        bool SourceFromTranscript, string? HostSessionId, DateTime StartedAt, bool StartTimeKnown, DateTime LastUpdate,
+        AgentStatus Status, int ToolCount, long LastEventTs);
+
+    void Restore()
+    {
+        try
+        {
+            if (!File.Exists(StatePath)) return;
+            var saved = JsonSerializer.Deserialize<SavedSession[]>(File.ReadAllText(StatePath)) ?? [];
+            var now = DateTime.Now;
+            foreach (var s in saved.Take(MaxSessions))
+            {
+                // Only bring back sessions whose Claude Code process is still running.
+                if (string.IsNullOrEmpty(s.SessionId) || s.SessionId.Length > 100 || s.Status == AgentStatus.Ended
+                    || s.ClaudePid <= 0 || !IsClaudeRunning(s.ClaudePid) || Sessions.Any(x => x.SessionId == s.SessionId))
+                    continue;
+                var session = new SessionInfo(s.SessionId, s.StartedAt, (_hueCounter++ * 137.508 + 20) % 360)
+                {
+                    ClaudePid = s.ClaudePid,
+                    TranscriptPath = s.TranscriptPath,
+                    Source = s.Source ?? "",
+                    SourceFromTranscript = s.SourceFromTranscript,
+                    HostSessionId = s.HostSessionId is { } host && DesktopSessionId.IsMatch(host) ? host : null,
+                    StartTimeKnown = s.StartTimeKnown,
+                    LastUpdate = s.LastUpdate > now ? now : s.LastUpdate,
+                    ToolCount = s.ToolCount,
+                    LastEventTs = s.LastEventTs,
+                    Status = s.Status,
+                    Activity = s.Status switch
+                    {
+                        AgentStatus.Working => "Working…",
+                        AgentStatus.Waiting => "Waiting for you",
+                        AgentStatus.Finished => "Finished, waiting for your next prompt",
+                        _ => "Waiting for a prompt",
+                    },
+                };
+                if (s.Cwd is { Length: > 0 and < 1024 } cwd)
+                {
+                    session.Cwd = cwd;
+                    session.Project = ProjectName(cwd);
+                    session.Branch = GitInfo.Branch(cwd);
+                }
+                if (s.Status == AgentStatus.Waiting) session.WaitingSince = session.LastUpdate;
+                session.RefreshTimes(now);
+                Sessions.Add(session);
+            }
+            Resort();
+        }
+        catch (Exception ex)
+        {
+            Log.Write($"Could not restore sessions: {ex.Message}");
+        }
+    }
+
+    void SaveState()
+    {
+        try
+        {
+            var saved = Sessions.Where(s => s.Status != AgentStatus.Ended).Select(s => new SavedSession(
+                s.SessionId, s.Cwd, s.ClaudePid, s.TranscriptPath, s.Source, s.SourceFromTranscript, s.HostSessionId,
+                s.StartedAt, s.StartTimeKnown, s.LastUpdate, s.Status, s.ToolCount, s.LastEventTs)).ToArray();
+            Directory.CreateDirectory(ConfigStore.Dir);
+            string temp = StatePath + ".tmp";
+            File.WriteAllText(temp, JsonSerializer.Serialize(saved));
+            File.Move(temp, StatePath, overwrite: true);
+        }
+        catch (Exception ex)
+        {
+            Log.Write($"Could not save sessions: {ex.Message}");
+        }
     }
 
     public ObservableCollection<SessionInfo> Sessions { get; } = new();
@@ -259,11 +337,13 @@ public sealed class SessionStore : ObservableObject
         MaybeReadTranscript(session);
         if (previous != session.Status || isNew) Resort();
         RefreshSummary();
+        _dirty = true;
     }
 
     public void Remove(SessionInfo session)
     {
         Sessions.Remove(session);
+        _dirty = true;
     }
 
     void Tick()
@@ -279,6 +359,7 @@ public sealed class SessionStore : ObservableObject
                 if (now - s.EndedAt > RemoveEndedAfter)
                 {
                     Sessions.Remove(s);
+                    _dirty = true;
                     continue;
                 }
             }
@@ -305,6 +386,12 @@ public sealed class SessionStore : ObservableObject
         {
             Resort();
             RefreshSummary();
+            _dirty = true;
+        }
+        if (_dirty)
+        {
+            _dirty = false;
+            SaveState();
         }
     }
 
