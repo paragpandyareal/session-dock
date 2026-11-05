@@ -20,16 +20,21 @@ public partial class App : Application
         base.OnStartup(e);
         Log.Init();
 
-        if (e.Args.Any(a => a is "--install-hooks" or "--uninstall-hooks"))
+        string? command = e.Args.FirstOrDefault(a => a is "--install" or "--uninstall" or "--install-hooks" or "--uninstall-hooks");
+        if (command != null)
         {
             AttachConsole(-1);
             Console.WriteLine();
             int code;
             try
             {
-                code = e.Args.Contains("--install-hooks")
-                    ? HookInstaller.Install(Console.Out)
-                    : HookInstaller.Uninstall(Console.Out);
+                code = command switch
+                {
+                    "--install" => Setup.Install(Console.Out, launch: !e.Args.Contains("--no-launch"), out _),
+                    "--uninstall" => Setup.Uninstall(Console.Out),
+                    "--install-hooks" => HookInstaller.Install(Console.Out),
+                    _ => HookInstaller.Uninstall(Console.Out),
+                };
             }
             catch (Exception ex)
             {
@@ -40,7 +45,14 @@ public partial class App : Application
             return;
         }
 
-        _singleInstance = new Mutex(true, @"Local\AgentDock.SingleInstance", out bool isFirst);
+        // Double-clicking the downloaded exe offers to install it properly (once).
+        if (OfferInstall())
+        {
+            Shutdown();
+            return;
+        }
+
+        _singleInstance = new Mutex(true, SingleInstanceName, out bool isFirst);
         if (!isFirst)
         {
             Shutdown();
@@ -55,10 +67,13 @@ public partial class App : Application
 
         HookInstaller.RefreshScript();
         var config = ConfigStore.LoadWithFreePort();
+        _config = config;
         _store = new SessionStore(Dispatcher, config);
         int port = StartServer(config);
 
         _window = new MainWindow(_store, port, HookInstaller.IsInstalled());
+        _window.ConnectRequested += () => ConnectHooks(askFirst: false);
+        Setup.ListenForQuit(() => Dispatcher.BeginInvoke(ExitApp));
         var store = _store;
         _tray = new TrayIcon(TogglePanel, ExitApp, () => _window.IsVisible, OpenLastAlert,
         [
@@ -66,6 +81,10 @@ public partial class App : Application
             new TrayToggle("Compact cards", () => store.CompactMode, v => store.CompactMode = v),
             new TrayToggle("Calm mode (less motion)", () => store.CalmMode, v => store.CalmMode = v),
             new TrayToggle("Plain wording (for screen sharing)", () => store.PlainMode, v => store.PlainMode = v),
+            // Only the installed copy owns the startup shortcut; a portable copy leaves it alone.
+            .. (Setup.IsRunningFromInstallDir
+                ? [new TrayToggle("Start with Windows", () => Setup.StartsWithWindows, v => Setup.StartsWithWindows = v)]
+                : Array.Empty<TrayToggle>()),
         ]);
         _store.LongTaskFinished += (session, took) =>
         {
@@ -82,6 +101,89 @@ public partial class App : Application
 
         _window.Show();
         Log.Write($"Session Dock started, listening on 127.0.0.1:{port}");
+
+        if (!HookInstaller.IsInstalled() && !config.SkipConnectOffer)
+            Dispatcher.BeginInvoke(() => ConnectHooks(askFirst: true));
+    }
+
+    public const string SingleInstanceName = @"Local\AgentDock.SingleInstance";
+
+    AppConfig? _config;
+
+    /// <summary>
+    /// When the release exe runs from somewhere other than its install folder (say, Downloads),
+    /// offers a one-click install. Returns true if it installed and launched the installed copy.
+    /// </summary>
+    static bool OfferInstall()
+    {
+        if (!Setup.IsReleaseBuild || Setup.IsRunningFromInstallDir) return false;
+        var config = ConfigStore.Load();
+        if (config.SkipInstallOffer) return false;
+
+        var answer = MessageBox.Show(
+            "Install Session Dock?\n\n" +
+            $"• Copies it to {Setup.InstallDir}\n" +
+            "• Connects it to Claude Code (backs up ~/.claude/settings.json first)\n" +
+            "• Adds it to the Start menu and starts it with Windows\n\n" +
+            "No admin rights needed. Choose No to just run this copy.",
+            "Session Dock", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (answer != MessageBoxResult.Yes)
+        {
+            ConfigStore.Update(c => c.SkipInstallOffer = true);
+            return false;
+        }
+
+        var output = new StringWriter();
+        int code;
+        bool launched = false;
+        try
+        {
+            code = Setup.Install(output, launch: true, out launched);
+        }
+        catch (Exception ex)
+        {
+            output.WriteLine($"Failed: {ex.Message}");
+            code = 1;
+        }
+        // If only the hook step failed (code 1), the installed copy is running and offers to connect
+        // itself, unless the user turned that offer off; every other failure needs a message here.
+        if (code != 0 && (code != 1 || !launched || ConfigStore.Load().SkipConnectOffer))
+            MessageBox.Show(output.ToString(), "Session Dock", MessageBoxButton.OK, MessageBoxImage.Warning);
+        return launched;
+    }
+
+    void ConnectHooks(bool askFirst)
+    {
+        if (askFirst)
+        {
+            var answer = MessageBox.Show(
+                "Connect Session Dock to Claude Code?\n\n" +
+                "This adds Session Dock's hook to ~/.claude/settings.json, after saving a backup. " +
+                "Nothing else in the file changes.",
+                "Session Dock", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (answer != MessageBoxResult.Yes)
+            {
+                if (_config != null) _config.SkipConnectOffer = true;
+                ConfigStore.Update(c => c.SkipConnectOffer = true);
+                return;
+            }
+        }
+
+        var output = new StringWriter();
+        int code;
+        try
+        {
+            code = HookInstaller.Install(output);
+        }
+        catch (Exception ex)
+        {
+            output.WriteLine($"Failed: {ex.Message}");
+            code = 1;
+        }
+        _window?.SetConnected(code == 0 && HookInstaller.IsInstalled());
+        MessageBox.Show(
+            code == 0 ? "Connected. Restart any Claude Code sessions that were already running so they show up." : output.ToString(),
+            "Session Dock", MessageBoxButton.OK, code == 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
     }
 
     int StartServer(AppConfig config)

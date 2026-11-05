@@ -23,3 +23,11 @@ jobs:
           node-version: 'lts/*'
       - name: Check hook script syntax
         run: node --check hook/agent-dock-hook.js
+      - name: Publish the single-file release exe
+        run: dotnet publish SessionDock.csproj -c Release -r win-x64 -o publish
+      - name: Check install.ps1 parses
+        shell: powershell
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD\install.ps1", [ref]$null, [ref]$errors) | Out-Null
+          if ($errors) { $errors | ForEach-Object { Write-Error $_.Message }; exit 1 }

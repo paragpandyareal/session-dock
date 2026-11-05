@@ -131,7 +131,7 @@ public sealed class SessionStore : ObservableObject
     public bool CompactMode
     {
         get => _config.CompactMode;
-        set { if (_config.CompactMode == value) return; _config.CompactMode = value; ConfigStore.Save(_config); OnPropertyChanged(); }
+        set { if (_config.CompactMode == value) return; _config.CompactMode = value; ConfigStore.Update(c => c.CompactMode = value); OnPropertyChanged(); }
     }
 
     bool _calmMode;
@@ -144,7 +144,7 @@ public sealed class SessionStore : ObservableObject
             if (!Set(ref _calmMode, value)) return;
             SessionInfo.InstantText = value;
             _config.CalmMode = value;
-            ConfigStore.Save(_config);
+            ConfigStore.Update(c => c.CalmMode = value);
         }
     }
 
@@ -152,14 +152,14 @@ public sealed class SessionStore : ObservableObject
     public bool MiniMode
     {
         get => _config.MiniMode;
-        set { if (_config.MiniMode == value) return; _config.MiniMode = value; ConfigStore.Save(_config); OnPropertyChanged(); }
+        set { if (_config.MiniMode == value) return; _config.MiniMode = value; ConfigStore.Update(c => c.MiniMode = value); OnPropertyChanged(); }
     }
 
     /// <summary>Plain wording instead of game phrases (good for screen sharing).</summary>
     public bool PlainMode
     {
         get => _config.PlainMode;
-        set { if (_config.PlainMode == value) return; _config.PlainMode = value; ConfigStore.Save(_config); OnPropertyChanged(); }
+        set { if (_config.PlainMode == value) return; _config.PlainMode = value; ConfigStore.Update(c => c.PlainMode = value); OnPropertyChanged(); }
     }
 
     string _summary = "";

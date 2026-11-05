@@ -1053,9 +1053,9 @@
                     </Grid.ColumnDefinitions>
                     <Ellipse x:Name="StatusDot" Width="7" Height="7" Fill="{StaticResource HpHighBrush}" VerticalAlignment="Center"/>
                     <TextBlock x:Name="PortText" Grid.Column="1" Margin="7,0,0,0" FontSize="11.5" Foreground="{StaticResource FaintBrush}"
-                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" MouseLeftButtonUp="PortText_Click"/>
                     <TextBlock Grid.Column="2" Margin="8,0,0,0" FontSize="11" Foreground="{StaticResource FaintBrush}" VerticalAlignment="Center"
-                               Text="Options" ToolTip="Right-click the Session Dock tray icon for Compact cards, Calm mode and Plain wording"
+                               Text="Options" ToolTip="Right-click the Session Dock tray icon for Compact cards, Calm mode, Plain wording and Start with Windows"
                                TextDecorations="Underline" Cursor="Hand" MouseLeftButtonUp="Options_Click"/>
                 </Grid>
             </Border>

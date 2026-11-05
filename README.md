@@ -56,21 +56,29 @@ Session Dock docks a slim panel to the right edge of your screen, like the taskb
 
 ## Install
 
-**You need:** Windows 10 or 11, [Claude Code](https://code.claude.com), [Node.js](https://nodejs.org) and the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0).
+**You need:** Windows 10 or 11 and [Claude Code](https://code.claude.com). The installer adds [Node.js](https://nodejs.org) if it's missing.
+
+Open PowerShell and paste:
 
 ```powershell
-winget install OpenJS.NodeJS.LTS Microsoft.DotNet.DesktopRuntime.10
+irm https://raw.githubusercontent.com/paragpandyareal/session-dock/main/install.ps1 | iex
 ```
 
-### 1. Get Session Dock
+If you don't have Node.js (the hook needs it), it first installs it with winget, which may show a Windows admin prompt. Session Dock itself needs no admin rights. Then it downloads the latest release, checks its SHA-256, and installs and starts the dock on the right edge of your screen. Restart any Claude Code sessions that were already open so they show up.
 
-Download **`SessionDock-win-x64.zip`** from the [latest release](https://github.com/paragpandyareal/session-dock/releases/latest). Check its SHA-256 against the release notes:
+Run the same line again any time to upgrade. It closes the running dock, swaps in the new version and starts it again. Your settings carry over, including whether it starts with Windows.
 
-```powershell
-Get-FileHash .\SessionDock-win-x64.zip -Algorithm SHA256
-```
+[Read the script](install.ps1) first if you like. It's short.
 
-Then extract it to `%LOCALAPPDATA%\Programs\SessionDock`.
+<details>
+<summary>Prefer to download it yourself?</summary>
+
+Download **`SessionDock.exe`** from the [latest release](https://github.com/paragpandyareal/session-dock/releases/latest) and double-click it. It offers to install itself: it copies to `%LOCALAPPDATA%\Programs\SessionDock`, connects to Claude Code, and adds a Start menu entry that starts with Windows. Say no and it just runs from where it is, and asks once to connect to Claude Code.
+
+It's one self-contained file, so there's no .NET runtime to install. If Node.js is missing, run `winget install OpenJS.NodeJS.LTS`, then click **Not connected** at the bottom of the dock.
+
+> **Heads up:** the release build isn't code-signed, so Windows SmartScreen may say "Windows protected your PC" when you double-click a downloaded copy. Click **More info → Run anyway**, or use the one-liner above, which checks the checksum for you.
+</details>
 
 <details>
 <summary>Or build it from source</summary>
@@ -79,43 +87,33 @@ Then extract it to `%LOCALAPPDATA%\Programs\SessionDock`.
 winget install Microsoft.DotNet.SDK.10
 git clone https://github.com/paragpandyareal/session-dock
 cd session-dock
-dotnet publish SessionDock.csproj -c Release -o "$env:LOCALAPPDATA\Programs\SessionDock"
+dotnet publish SessionDock.csproj -c Release -r win-x64 -o publish
+.\publish\SessionDock.exe --install
 ```
 </details>
 
-### 2. Connect it to Claude Code (one time)
+**Start with Windows** is on after installing. Turn it off from the tray icon's menu.
 
-```powershell
-& "$env:LOCALAPPDATA\Programs\SessionDock\SessionDock.exe" --install-hooks
-```
+**Upgrading from 1.1?** Run the one-liner. It replaces the old files in `%LOCALAPPDATA%\Programs\SessionDock` with the single exe, keeps your hooks and settings, and replaces a startup shortcut you made by hand with its own, so the dock doesn't start twice.
 
-This saves a backup of `~/.claude/settings.json`, then adds one hook entry per event. Nothing else in the file is touched. Restart any Claude Code sessions that are already running so they pick up the hooks.
-
-### 3. Run it
-
-```powershell
-& "$env:LOCALAPPDATA\Programs\SessionDock\SessionDock.exe"
-```
-
-To start it with Windows, press <kbd>Win</kbd>+<kbd>R</kbd>, type `shell:startup`, and drop a shortcut to `SessionDock.exe` in that folder.
-
-> **Heads up:** the release build isn't code-signed, so Windows SmartScreen may say "Windows protected your PC" the first time. Click **More info → Run anyway**, or build from source if you'd rather.
+**Upgrading from Sessiondex 1.0?** Run the one-liner too. It closes the old `AgentDock.exe`, keeps your hooks and settings, and replaces its startup shortcut. Then delete the old folder you extracted it to (for example `%LOCALAPPDATA%\Programs\Sessiondex`).
 
 ## Uninstall
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\SessionDock\SessionDock.exe" --uninstall-hooks
+& "$env:LOCALAPPDATA\Programs\SessionDock\SessionDock.exe" --uninstall
 ```
 
-Then quit it from the tray and delete `%LOCALAPPDATA%\Programs\SessionDock` and `%LOCALAPPDATA%\AgentDock`. That's everything.
+This quits the dock and removes its hooks from `~/.claude/settings.json` (after a backup). It also removes the shortcuts, `%LOCALAPPDATA%\Programs\SessionDock` and `%LOCALAPPDATA%\AgentDock`. The only things left are the `settings.json.agentdock-backup-*` files next to your settings, in case you want them. Delete those whenever you like.
 
 ## Transparency: what it does on your machine
 
 Short version: **it never leaves your machine.**
 
 - **No network calls** except to itself on `127.0.0.1`. No telemetry, analytics, accounts or auto-update.
-- **No admin rights.** No services, drivers or registry changes.
-- **It changes exactly one file you own:** `~/.claude/settings.json`, and only when you run `--install-hooks`. It keeps a timestamped backup and removes its entries with `--uninstall-hooks`.
+- **No admin rights.** No services, drivers or registry changes. (The one-line installer can install Node.js through winget, which may ask for admin.)
+- **It changes exactly one file you own:** `~/.claude/settings.json`, and only when you agree to connect it (or run `--install`). It keeps a timestamped backup and removes its entries with `--uninstall`.
+- **Installing puts files in three places:** the exe in `%LOCALAPPDATA%\Programs\SessionDock`, its config and hook script in `%LOCALAPPDATA%\AgentDock`, and two shortcuts (Start menu and Startup folder). No registry entries.
 - **The hook is about 80 readable lines:** [`hook/agent-dock-hook.js`](hook/agent-dock-hook.js), with no dependencies. It forwards each event to the app and always exits within 1 second. It never prints anything, so it can't inject text into Claude's context, and it runs in the background so Claude never waits on it.
 - **The local listener is locked down.** It needs a per-install random token, rejects browser requests and DNS-rebinding tricks, accepts only small JSON bodies, and validates every field before use.
 - **Your prompts stay in memory** and are never written to disk.
