@@ -39,15 +39,15 @@ public static class HookInstaller
         CommentHandling = JsonCommentHandling.Skip,
     };
 
-    /// <summary>Copies the bundled hook script to %LOCALAPPDATA%\AgentDock if it is missing or out of date.</summary>
+    /// <summary>Writes the hook script (embedded in the exe) to %LOCALAPPDATA%\AgentDock if it is missing or out of date.</summary>
     public static void RefreshScript()
     {
         try
         {
-            string source = Path.Combine(AppContext.BaseDirectory, "hook", ScriptName);
-            if (!File.Exists(source)) return;
+            using var stream = typeof(HookInstaller).Assembly.GetManifestResourceStream(ScriptName);
+            if (stream == null) return;
             Directory.CreateDirectory(ConfigStore.Dir);
-            string text = File.ReadAllText(source);
+            string text = new StreamReader(stream).ReadToEnd();
             if (!File.Exists(InstalledScriptPath) || File.ReadAllText(InstalledScriptPath) != text)
                 File.WriteAllText(InstalledScriptPath, text);
         }
@@ -62,19 +62,29 @@ public static class HookInstaller
         RefreshScript();
         if (!File.Exists(InstalledScriptPath))
         {
-            output.WriteLine($"Hook script not found next to the app ({Path.Combine(AppContext.BaseDirectory, "hook", ScriptName)}).");
+            output.WriteLine($"Could not write the hook script to {InstalledScriptPath}.");
             return 1;
         }
 
         string? node = FindNode();
         if (node == null)
         {
-            output.WriteLine("Could not find node.exe. Install Node.js (winget install OpenJS.NodeJS.LTS) and run this again.");
+            output.WriteLine("Session Dock needs Node.js to hear from Claude Code, and it isn't installed.");
+            output.WriteLine("Install it with: winget install OpenJS.NodeJS.LTS");
+            output.WriteLine("Then click \"Not connected\" at the bottom of the dock to finish.");
             return 1;
         }
 
-        // Make sure the hook has a port to read even before the app first runs.
-        ConfigStore.LoadWithFreePort();
+        // Make sure the hook has a port to read even before the app first runs. Never move an
+        // existing port: the running dock may be listening on it.
+        ConfigStore.EnsureExists();
+
+        // Reinstalling or upgrading shouldn't rewrite settings.json (or pile up backups) when nothing changed.
+        if (IsCurrent(node))
+        {
+            output.WriteLine($"Session Dock is already connected to Claude Code ({SettingsPath}). Nothing to change.");
+            return 0;
+        }
 
         var root = LoadSettings(output, out string? backup);
         if (root == null) return 1;
@@ -94,22 +104,7 @@ public static class HookInstaller
                 hooks[name] = groups;
             }
             RemoveOurHandlers(groups);
-            groups.Add(new JsonObject
-            {
-                ["hooks"] = new JsonArray
-                {
-                    new JsonObject
-                    {
-                        ["type"] = "command",
-                        ["command"] = node,
-                        ["args"] = new JsonArray(InstalledScriptPath),
-                        ["timeout"] = 5,
-                        // Run in the background so Claude Code never waits on the dock.
-                        // SessionEnd stays synchronous so it is delivered before the process exits.
-                        ["async"] = name != "SessionEnd",
-                    },
-                },
-            });
+            groups.Add(new JsonObject { ["hooks"] = new JsonArray { Handler(name, node) } });
         }
 
         Save(root);
@@ -118,6 +113,41 @@ public static class HookInstaller
         output.WriteLine($"Hook command: \"{node}\" \"{InstalledScriptPath}\"");
         output.WriteLine("Restart running Claude Code sessions so they pick up the new hooks.");
         return 0;
+    }
+
+    static JsonObject Handler(string eventName, string node) => new()
+    {
+        ["type"] = "command",
+        ["command"] = node,
+        ["args"] = new JsonArray(InstalledScriptPath),
+        ["timeout"] = 5,
+        // Run in the background so Claude Code never waits on the dock.
+        // SessionEnd stays synchronous so it is delivered before the process exits.
+        ["async"] = eventName != "SessionEnd",
+    };
+
+    /// <summary>True when every event already has exactly one Session Dock handler, identical to what Install would write.</summary>
+    static bool IsCurrent(string node)
+    {
+        try
+        {
+            if (!File.Exists(SettingsPath)) return false;
+            if (JsonNode.Parse(File.ReadAllText(SettingsPath), null, ReadOptions)?["hooks"] is not JsonObject hooks) return false;
+            foreach (var name in Events)
+            {
+                if (hooks[name] is not JsonArray groups) return false;
+                var ours = groups.Where(g => g?["hooks"] is JsonArray)
+                                 .SelectMany(g => (JsonArray)g!["hooks"]!)
+                                 .Where(IsOurHandler)
+                                 .ToList();
+                if (ours.Count != 1 || !JsonNode.DeepEquals(ours[0], Handler(name, node))) return false;
+            }
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     public static int Uninstall(TextWriter output)

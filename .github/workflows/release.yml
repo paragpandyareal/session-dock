@@ -1,0 +1,72 @@
+name: release
+
+# Push a tag like v1.2.0 (matching <Version> in SessionDock.csproj) to build a draft release with:
+#   SessionDock.exe         single self-contained exe (no .NET runtime needed)
+#   SessionDock-win-x64.zip the same exe plus LICENSE and SECURITY.md
+#   SHA256SUMS.txt          checksums that install.ps1 verifies against
+# Review the draft, then publish it. install.ps1 always fetches the latest published release.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      TAG: ${{ github.ref_name }}
+      REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 'lts/*'
+      - name: Check hook script syntax
+        run: node --check hook/agent-dock-hook.js
+      - name: Check the tag matches the app version
+        shell: pwsh
+        run: |
+          $version = ([xml](Get-Content SessionDock.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          if ("v$version" -ne $env:TAG) { throw "Tag $env:TAG does not match <Version>$version</Version> in SessionDock.csproj" }
+      - name: Publish
+        run: dotnet publish SessionDock.csproj -c Release -r win-x64 -o publish
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory dist | Out-Null
+          Copy-Item publish/SessionDock.exe dist/
+          Compress-Archive -Path publish/SessionDock.exe, LICENSE, SECURITY.md -DestinationPath dist/SessionDock-win-x64.zip
+          # Collect the lines first so the sums file can never list itself.
+          $sums = Get-ChildItem dist -File | ForEach-Object {
+            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant())  $($_.Name)"
+          }
+          $sums | Set-Content dist/SHA256SUMS.txt -Encoding ascii
+          Get-Content dist/SHA256SUMS.txt
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $template = @'
+          **Install or upgrade** in one line (PowerShell):
+          ```powershell
+          irm https://raw.githubusercontent.com/REPO/main/install.ps1 | iex
+          ```
+          Or download **SessionDock.exe** and double-click it. It offers to install itself.
+
+          The build is unsigned, so SmartScreen may warn when you double-click a downloaded copy. The one-line installer checks the checksum for you.
+
+          **SHA-256**
+          ```
+          SUMS
+          ```
+          '@
+          $notes = $template.Replace('REPO', $env:REPO).Replace('SUMS', (Get-Content dist/SHA256SUMS.txt -Raw).Trim())
+          Set-Content notes.md $notes -Encoding utf8
+          $files = (Get-ChildItem dist -File).FullName
+          gh release create $env:TAG @files --title "Session Dock $($env:TAG.TrimStart('v'))" --notes-file notes.md --draft

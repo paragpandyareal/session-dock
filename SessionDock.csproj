@@ -13,7 +13,7 @@
     <Product>Session Dock</Product>
     <!-- Shown as the app name on Windows notifications -->
     <AssemblyTitle>Session Dock</AssemblyTitle>
-    <Version>1.1.1</Version>
+    <Version>1.2.0</Version>
     <!-- The manifest's DPI settings are for WPF; WinForms is only used for the tray icon. -->
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <!-- Reproducible builds that don't embed the builder's local folder paths -->
@@ -22,8 +22,17 @@
     <DebugType>embedded</DebugType>
   </PropertyGroup>
 
+  <!-- Release builds (dotnet publish -r win-x64) are one self-contained exe: no .NET runtime to install. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
   <ItemGroup>
-    <None Update="hook\agent-dock-hook.js" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The readable source stays in hook\; the exe carries a copy and writes it to %LOCALAPPDATA%\AgentDock. -->
+    <EmbeddedResource Include="hook\agent-dock-hook.js" LogicalName="agent-dock-hook.js" />
   </ItemGroup>
 
 </Project>

@@ -16,6 +16,10 @@ public sealed class AppConfig
     public bool? CalmMode { get; set; }
     public bool PlainMode { get; set; }
     public bool MiniMode { get; set; }
+    /// <summary>The user chose to run this copy without installing it; don't ask again.</summary>
+    public bool SkipInstallOffer { get; set; }
+    /// <summary>The user said no to connecting the hooks; don't ask again on every start.</summary>
+    public bool SkipConnectOffer { get; set; }
 }
 
 /// <summary>Stores the listener port in %LOCALAPPDATA%\AgentDock\config.json, where the hook script reads it.</summary>
@@ -53,6 +57,24 @@ public static class ConfigStore
         File.WriteAllText(FilePath, JsonSerializer.Serialize(config, JsonOptions));
     }
 
+    /// <summary>
+    /// Changes one setting on disk without overwriting the others. Another copy of the app (or the
+    /// installer) may have written fields this process's in-memory config doesn't know about.
+    /// </summary>
+    public static void Update(Action<AppConfig> change)
+    {
+        try
+        {
+            var config = Load();
+            change(config);
+            Save(config);
+        }
+        catch (Exception ex)
+        {
+            Log.Write($"Could not save config: {ex.Message}");
+        }
+    }
+
     /// <summary>Loads the config, keeping the saved port if it is still free, otherwise picking a new free one.</summary>
     public static AppConfig LoadWithFreePort()
     {
@@ -70,6 +92,17 @@ public static class ConfigStore
         }
         if (changed) Save(config);
         return config;
+    }
+
+    /// <summary>
+    /// Makes sure config.json has a port and token for the hook to read, without moving an existing
+    /// port. Used by the hook installer, which can run while the dock itself holds that port.
+    /// </summary>
+    public static void EnsureExists()
+    {
+        var config = Load();
+        if (File.Exists(FilePath) && config.Port is >= 1024 and <= 65535 && config.Token.Length >= 32) return;
+        LoadWithFreePort();
     }
 
     public static int FindFreePort()

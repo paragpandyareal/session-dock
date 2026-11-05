@@ -31,12 +31,33 @@ public partial class MainWindow : Window
 
         LogoImage.Source = Critter.Create("agent-dock").ToImage();
         EmptyImage.Source = Critter.Create("sleepy").ToImage();
+        _port = port;
+        SetConnected(hooksInstalled);
+    }
+
+    readonly int _port;
+    bool _connected;
+
+    /// <summary>Raised when the user clicks "Not connected" to set up the hooks.</summary>
+    public event Action? ConnectRequested;
+
+    public void SetConnected(bool connected)
+    {
+        _connected = connected;
         // Only surface technical details when something needs fixing.
-        PortText.Text = hooksInstalled ? "Connected to Claude Code" : "Not connected: hooks not installed";
-        PortText.ToolTip = hooksInstalled
-            ? $"Receiving hook events on 127.0.0.1:{port}\nHooks registered in {HookInstaller.SettingsPath}"
-            : "Run: SessionDock.exe --install-hooks";
-        if (!hooksInstalled) StatusDot.Fill = (System.Windows.Media.Brush)FindResource("WaitingBrush");
+        PortText.Text = connected ? "Connected to Claude Code" : "Not connected: click to connect";
+        PortText.ToolTip = connected
+            ? $"Receiving hook events on 127.0.0.1:{_port}\nHooks registered in {HookInstaller.SettingsPath}"
+            : "Click to connect Session Dock to Claude Code";
+        PortText.TextDecorations = connected ? null : TextDecorations.Underline;
+        PortText.Cursor = connected ? null : System.Windows.Input.Cursors.Hand;
+        StatusDot.Fill = (System.Windows.Media.Brush)FindResource(connected ? "HpHighBrush" : "WaitingBrush");
+    }
+
+    void PortText_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // Deferred: a message box opened from inside this non-activating window's mouse handler never shows.
+        if (!_connected) Dispatcher.BeginInvoke(() => ConnectRequested?.Invoke());
     }
 
     protected override void OnSourceInitialized(EventArgs e)
